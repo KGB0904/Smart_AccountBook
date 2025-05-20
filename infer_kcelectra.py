@@ -1,9 +1,8 @@
-
 import torch
 import json
 import pickle
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import re
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # 전처리 함수
 def clean_text(text):
@@ -12,9 +11,9 @@ def clean_text(text):
     return text.strip()
 
 # 모델, 토크나이저, 라벨 인코더 로드
-model = AutoModelForSequenceClassification.from_pretrained("kc_model")
-tokenizer = AutoTokenizer.from_pretrained("kc_model")
-with open("kc_label_encoder.pkl", "rb") as f:
+model = AutoModelForSequenceClassification.from_pretrained("kc_model_merge")
+tokenizer = AutoTokenizer.from_pretrained("kc_model_merge")
+with open("kc_model_merge/kc_label_encoder_merge.pkl", "rb") as f:
     le = pickle.load(f)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -24,7 +23,7 @@ model.to(device)
 with open("gpt_receipt_result.json", "r", encoding="utf-8") as f:
     gpt_items = json.load(f)
 
-# 입력 텍스트 전처리 및 필터링
+# 입력 정제 및 필터링
 texts = []
 valid_items = []
 for entry in gpt_items:
@@ -43,7 +42,7 @@ with torch.no_grad():
     outputs = model(**inputs)
     preds = torch.argmax(outputs.logits, dim=-1)
 
-# 라벨 디코딩
+# 라벨 변환
 labels = le.inverse_transform(preds.cpu().numpy())
 for i, entry in enumerate(valid_items):
     entry["category"] = labels[i]
