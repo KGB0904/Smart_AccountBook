@@ -1,15 +1,16 @@
-
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AdamW
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from torch.optim import AdamW
 from sklearn.preprocessing import LabelEncoder
 from tqdm import tqdm
 import re
 import pickle
+import os
 
 # 데이터 로드 및 전처리
-df = pd.read_csv("total_product_sorted.csv").dropna()
+df = pd.read_csv("total_product_sorted_merge.csv").dropna()
 
 def clean_text(text):
     text = re.sub(r"[^\w가-힣\s]", "", text)
@@ -21,6 +22,11 @@ df["cleaned_input"] = df["input"].apply(clean_text)
 # 라벨 인코딩
 le = LabelEncoder()
 df["label"] = le.fit_transform(df["target"])
+
+# 저장 경로
+os.makedirs("kc_model_merge", exist_ok=True)
+with open("kc_model_merge/kc_label_encoder_merge.pkl", "wb") as f:
+    pickle.dump(le, f)
 
 # 토크나이저 및 데이터셋 정의
 tokenizer = AutoTokenizer.from_pretrained("beomi/KcELECTRA-base-v2022")
@@ -66,10 +72,8 @@ for epoch in range(epochs):
         total_loss += loss.item()
         loop.set_postfix(loss=loss.item())
 
-    print(f"✅ Epoch {epoch+1} 평균 손실: {total_loss / len(loader):.4f}")
+    print(f" Epoch {epoch+1} 평균 손실: {total_loss / len(loader):.4f}")
 
-# 모델 저장
-model.save_pretrained("kc_model")
-tokenizer.save_pretrained("kc_model")
-with open("kc_label_encoder.pkl", "wb") as f:
-    pickle.dump(le, f)
+# 모델 및 토크나이저 저장
+model.save_pretrained("kc_model_merge")
+tokenizer.save_pretrained("kc_model_merge")
