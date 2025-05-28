@@ -4,12 +4,6 @@ import pickle
 import re
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# 전처리 함수
-def clean_text(text):
-    text = re.sub(r"[^\w가-힣\s]", "", text)
-    text = re.sub(r"\bP\b|ML|ml|G|g|g\b", "", text, flags=re.IGNORECASE)
-    return text.strip()
-
 # 모델, 토크나이저, 라벨 인코더 로드
 model = AutoModelForSequenceClassification.from_pretrained("kc_model_merge")
 tokenizer = AutoTokenizer.from_pretrained("kc_model_merge")
@@ -28,7 +22,7 @@ texts = []
 valid_items = []
 for entry in gpt_items:
     item = entry["item"]
-    cleaned = clean_text(item)
+    cleaned = item
     if cleaned and len(cleaned) >= 2:
         texts.append(cleaned)
         valid_items.append(entry)
