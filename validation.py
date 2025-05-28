@@ -16,16 +16,8 @@ font = font_manager.FontProperties(fname = font_path).get_name()
 rc('font', family = font)
 
 # 1. 데이터 로드 + 셔플
-df = pd.read_csv("total_product_sorted_merge.csv").dropna()
+df = pd.read_csv("val_split.csv").dropna()
 df = df.sample(frac=1, random_state=42).reset_index(drop=True)
-
-# 전처리 함수
-def clean_text(text):
-    text = re.sub(r"[^\w가-힣\\s]", "", text)
-    text = re.sub(r"\\bP\\b|ML|ml|G|g|g\\b", "", text, flags=re.IGNORECASE)
-    return text.strip()
-
-df["cleaned_input"] = df["input"].apply(clean_text)
 
 # 라벨 인코더 불러오기
 with open("kc_model_merge/kc_label_encoder_merge.pkl", "rb") as f:
@@ -33,7 +25,7 @@ with open("kc_model_merge/kc_label_encoder_merge.pkl", "rb") as f:
 df["label"] = le.transform(df["target"])
 
 # val만 분리 (전체 20%)
-val_size = int(len(df) * 0.2)
+val_size = int(len(df))
 val_df = df[:val_size]
 
 # 토크나이저 + 모델 로드
@@ -54,7 +46,7 @@ class ProductDataset(Dataset):
     def __len__(self):
         return len(self.labels)
 
-val_dataset = ProductDataset(val_df["cleaned_input"].tolist(), val_df["label"].tolist())
+val_dataset = ProductDataset(val_df["input"].tolist(), val_df["label"].tolist())
 val_loader = DataLoader(val_dataset, batch_size=8)
 
 # 디바이스 설정
@@ -95,3 +87,18 @@ plt.title("Confusion Matrix")
 plt.tight_layout()
 plt.savefig("confusion_matrix_val.png")
 plt.show()
+
+# 오분류 인덱스 찾기
+mismatched_indices = [i for i, (true, pred) in enumerate(zip(y_true, y_pred)) if true != pred]
+
+# 오분류 데이터 추출
+misclassified_df = val_df.iloc[mismatched_indices].copy()
+misclassified_df["예측"] = [le.inverse_transform([p])[0] for p in [y_pred[i] for i in mismatched_indices]]
+misclassified_df["실제"] = [le.inverse_transform([t])[0] for t in [y_true[i] for i in mismatched_indices]]
+
+# 필요한 열만 포함하여 JSON 변환
+misclassified_json = misclassified_df[["input", "cleaned_input", "실제", "예측"]].to_dict(orient="records")
+
+import json
+with open("misclassified_samples.json", "w", encoding="utf-8") as f:
+    json.dump(misclassified_json, f, indent=2, ensure_ascii=False)
