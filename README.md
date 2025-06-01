@@ -1,5 +1,5 @@
 # Smart_AccountBook  
-딥러닝 프로젝트: OCR&GPT API를 활용한 1차 분류 + KcELECTRA를 활용한 2차 소비 항목 분류
+딥러닝 프로젝트: OCR&GPT API를 활용한 1차 Parsing + KcELECTRA를 활용한 2차 소비 항목 분류
 
 kc_model 폴더는 학습 이후 생성되는 폴더입니다. 딥러닝 모델 특성상 정확도가 학습마다 달라지기에, 잘 나올 때까지 여러번 시행착오가 필요할 수 있습니다.
 
